@@ -6,20 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
-public function up(): void
+    public function up(): void
     {
-        Schema::table('voting_periods', function (Blueprint $table) {
-            $table->timestamp('results_announced_at')->nullable();
-        });
+        if (!Schema::hasColumn('users', 'profile_photo_path')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->string('profile_photo_path')->nullable();
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('voting_periods', function (Blueprint $table) {
-            $table->dropColumn('results_announced_at');
-        });
+        if (Schema::hasColumn('users', 'profile_photo_path')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->dropColumn('profile_photo_path');
+            });
+        }
     }
 };

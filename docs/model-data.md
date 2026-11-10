@@ -1,10 +1,13 @@
 # Model Data Sistem Voting
 
-Dokumen ini berisi CDM (model konseptual) dan PDM (model fisik) berdasarkan
-migrasi dan skema database MySQL aplikasi. CDM hanya memuat entitas bisnis;
-PDM juga mencakup tabel pendukung Laravel.
+Dokumen ini berisi CDM (Conceptual Data Model) dan PDM (Physical Data Model)
+untuk empat tabel utama sistem voting: `users`, `members`, `voting_periods`,
+dan `votes`. Tabel pendukung Laravel tidak ditampilkan. Struktur tabel mengacu
+pada file migrasi di `database/migrations`.
 
 ## CDM — Conceptual Data Model
+
+CDM memuat empat entitas bisnis utama dan atribut konseptualnya.
 
 ```mermaid
 erDiagram
@@ -17,7 +20,6 @@ erDiagram
         string nama
         string email
         string peran
-        string profile_photo_path
     }
 
     ANGGOTA {
@@ -28,7 +30,7 @@ erDiagram
         date tanggal_lahir
         integer generasi
         string tim
-        string photo_path
+        string lokasi_foto
         boolean aktif
     }
 
@@ -40,22 +42,28 @@ erDiagram
         datetime selesai
         integer batas_suara_per_pemilih
         string status
-        datetime results_announced_at
+        datetime hasil_diumumkan_pada
     }
 
     SUARA {
         integer id
-        integer quantity
+        integer pengguna_id
+        integer anggota_id
+        integer periode_voting_id
+        integer jumlah
     }
 ```
 
-Setiap suara dimiliki oleh satu pengguna, ditujukan kepada satu anggota, dan
-tercatat pada satu periode voting. Satu pengguna, anggota, atau periode voting
-dapat terkait dengan banyak suara.
+Setiap suara berasal dari satu pengguna, ditujukan kepada satu anggota, dan
+berada pada satu periode voting. Satu pengguna, anggota, atau periode voting
+dapat terkait dengan banyak suara. Batas suara per pemilih disimpan pada
+periode; jumlah suara aktual disimpan pada setiap baris suara.
 
 ## PDM — Physical Data Model
 
-### Tabel inti aplikasi
+Diagram berikut hanya menampilkan tabel utama aplikasi. Relasi hanya
+digambarkan sebagai foreign key jika constraint tersebut benar-benar
+didefinisikan.
 
 ```mermaid
 erDiagram
@@ -71,7 +79,6 @@ erDiagram
         varchar_255 password
         varchar_100 remember_token "nullable"
         varchar_255 role "default voter"
-        varchar_255 profile_photo_path "nullable"
         timestamp created_at "nullable"
         timestamp updated_at "nullable"
     }
@@ -114,47 +121,36 @@ erDiagram
     }
 ```
 
-### Tabel pendukung Laravel
+### Tabel dan aturan relasi
 
-Tabel berikut juga ada di database, tetapi tidak memiliki relasi bisnis langsung
-dengan entitas voting.
-
-| Tabel | Kolom fisik |
+| Tabel | Kunci, indeks, dan keterangan |
 |---|---|
-| `password_reset_tokens` | `email varchar(255) PK`, `token varchar(255)`, `created_at timestamp NULL` |
-| `sessions` | `id varchar(255) PK`, `user_id bigint unsigned NULL` (indeks, bukan foreign key), `ip_address varchar(45) NULL`, `user_agent text NULL`, `payload longtext`, `last_activity int` |
-| `cache` | `key varchar(255) PK`, `value mediumtext`, `expiration bigint` |
-| `cache_locks` | `key varchar(255) PK`, `owner varchar(255)`, `expiration bigint` |
-| `jobs` | `id bigint unsigned PK`, `queue varchar(255)`, `payload longtext`, `attempts smallint unsigned`, `reserved_at int unsigned NULL`, `available_at int unsigned`, `created_at int unsigned` |
-| `job_batches` | `id varchar(255) PK`, `name varchar(255)`, `total_jobs int`, `pending_jobs int`, `failed_jobs int`, `failed_job_ids longtext`, `options mediumtext`, `cancelled_at int NULL`, `created_at int`, `finished_at int NULL` |
-| `failed_jobs` | `id bigint unsigned PK`, `uuid varchar(255) UNIQUE`, `connection varchar(255)`, `queue varchar(255)`, `payload longtext`, `exception longtext`, `failed_at timestamp` |
-| `migrations` | `id int unsigned PK`, `migration varchar(255)`, `batch int` |
-
-### Kunci, indeks, dan aturan relasi
-
-| Tabel | Kunci dan indeks penting |
-|---|---|
-| `users` | `id` primary key; `email` unique. |
+| `users` | `id` primary key; `email` unique. Kolom `role` ditambahkan oleh migrasi terpisah. |
 | `members` | `id` primary key; indeks gabungan (`generation`, `team`) dan indeks `is_active`. |
-| `voting_periods` | `id` primary key; indeks gabungan (`status`, `start_at`, `end_at`). |
-| `votes` | `id` primary key; foreign key `user_id`, `member_id`, `voting_period_id`; indeks gabungan (`user_id`, `voting_period_id`) dan (`voting_period_id`, `member_id`). |
+| `voting_periods` | `id` primary key; indeks gabungan (`status`, `start_at`, `end_at`). Status yang disebut dalam migrasi: `draft`, `published`, dan `closed`. |
+| `votes` | `id` primary key; foreign key `user_id`, `member_id`, dan `voting_period_id`; indeks gabungan (`user_id`, `voting_period_id`) dan (`voting_period_id`, `member_id`). `quantity` ditambahkan oleh migrasi terpisah. |
 
 - Penghapusan pengguna menghapus suara terkait (`cascadeOnDelete`).
 - Penghapusan anggota atau periode yang masih memiliki suara ditolak
   (`restrictOnDelete`).
-- Status periode yang disebut dalam migrasi adalah `draft`, `published`, dan
-  `closed`.
-- `votes_per_voter` adalah batas jumlah suara per pemilih dalam periode;
+- `votes_per_voter` adalah batas jumlah suara per pemilih pada satu periode;
   `quantity` adalah jumlah pada satu baris suara.
-- Database tidak memiliki constraint unik untuk pasangan pengguna-periode atau
-  constraint yang memastikan total `quantity` mematuhi `votes_per_voter`;
-  batas tersebut perlu divalidasi oleh logika aplikasi.
+- Tidak ada constraint unik untuk pasangan pengguna-periode dan tidak ada
+  constraint database yang memastikan total `quantity` mematuhi
+  `votes_per_voter`; aturan tersebut perlu divalidasi oleh logika aplikasi.
 
-### Catatan kesesuaian migrasi
+### Catatan kesesuaian migrasi dan kode
 
-Skema database saat ini memiliki `users.profile_photo_path`, `users.role`,
-`voting_periods.results_announced_at`, dan `votes.quantity`. Namun, file migrasi
-`2026_10_29_021339_add_profile_photo_path_to_users_table.php` yang ada di kode
-saat ini berisi penambahan `results_announced_at` ke `voting_periods`, bukan
-`profile_photo_path` ke `users`. Pastikan migrasi tersebut diselaraskan dengan
-skema sebelum menyiapkan database baru.
+- Migrasi `2026_10_29_021339_add_profile_photo_path_to_users_table.php` tidak
+  menambahkan `profile_photo_path` ke `users`; isinya menambahkan
+  `results_announced_at` ke `voting_periods`.
+- Migrasi `2026_10_30_000033_add_results_announced_at_to_voting_periods_table.php`
+  juga menambahkan kolom `results_announced_at` yang sama. Jika kedua migrasi
+  dijalankan berurutan pada database baru, migrasi kedua berpotensi gagal
+  karena kolom tersebut sudah ada.
+- Model dan kode aplikasi menggunakan `users.profile_photo_path`, tetapi tidak
+  ada migrasi yang membuat kolom itu. Kolom tersebut karena itu tidak
+  dicantumkan sebagai kolom fisik `users` pada PDM ini.
+- PDM menggambarkan kolom `results_announced_at` satu kali sebagai struktur
+  yang dimaksud oleh migrasi. Riwayat migrasi perlu diselaraskan sebelum
+  membuat database baru agar kolom itu tidak ditambahkan dua kali.
