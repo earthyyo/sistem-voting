@@ -19,6 +19,9 @@ use App\Http\Controllers\Admin\VoterController as AdminVoterController;
 Route::get('/', [VoterController::class, 'home'])
     ->name('home');
 
+// Daftar member bisa dilihat semua pengunjung
+Route::get('/members', [VoterController::class, 'members'])
+    ->name('members');
 // ========================================
 // LOGIN & REGISTER
 // ========================================
@@ -71,10 +74,7 @@ Route::middleware(['auth', 'voter'])->group(function () {
 
     Route::get('/dashboard', [VoterController::class, 'dashboard'])
         ->name('dashboard');
-
-    Route::get('/members', [VoterController::class, 'members'])
-        ->name('members');
-
+        
     Route::get('/ranking', [VoterController::class, 'ranking'])
         ->name('ranking');
 

@@ -33,7 +33,7 @@ export default function Index({ voters, stats = {}, filters = {} }) {
             <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6">
                 <header>
                     <p className="text-sm font-semibold uppercase tracking-[0.2em] text-red-500">
-                        SSK.VOTE / ADMIN
+                        SSK.VOTE ADMIN
                     </p>
 
                     <h1 className="mt-2 text-3xl font-bold">

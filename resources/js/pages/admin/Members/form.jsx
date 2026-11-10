@@ -92,7 +92,7 @@ export default function MemberForm({ member, generations, teams }) {
             <div className="mx-auto max-w-3xl space-y-6">
                 <div>
                     <p className="text-sm font-bold tracking-[0.3em] text-red-500">
-                        SSK.VOTE / ADMIN
+                        SSK.VOTE ADMIN
                     </p>
 
                     <h1 className="mt-3 text-3xl font-bold">

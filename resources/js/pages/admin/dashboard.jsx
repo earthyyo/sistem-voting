@@ -16,10 +16,6 @@ function StatCard({ title, value, description, icon }) {
                         {description}
                     </p>
                 </div>
-
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-600/15 text-xl text-red-400">
-                    {icon}
-                </div>
             </div>
         </div>
     );
@@ -28,13 +24,13 @@ function StatCard({ title, value, description, icon }) {
 const statusStyles = {
     draft: 'bg-yellow-500/10 text-yellow-400',
     published: 'bg-green-500/10 text-green-400',
-    closed: 'bg-gray-500/10 text-gray-400',
+    selesai: 'bg-gray-500/10 text-gray-400',
 };
 
 const statusLabels = {
     draft: 'Draft',
     published: 'Published',
-    closed: 'Closed',
+    selesai: 'Selesai',
 };
 
 export default function AdminDashboard({
@@ -50,7 +46,7 @@ export default function AdminDashboard({
                     {/* Header */}
                     <div>
                         <p className="text-xs font-bold tracking-[0.25em] text-red-500">
-                            SSK.VOTE / ADMIN
+                            SSK.Vote Admin
                         </p>
 
                         <h1 className="mt-3 text-3xl font-black sm:text-4xl">
@@ -73,28 +69,24 @@ export default function AdminDashboard({
                                 title="Total Member"
                                 value={stats?.members}
                                 description={`${stats?.active_members ?? 0} member aktif`}
-                                icon="♙"
                             />
 
                             <StatCard
                                 title="Total Voter"
                                 value={stats?.voters}
                                 description="Akun pemilih terdaftar"
-                                icon="♧"
                             />
 
                             <StatCard
                                 title="Total Vote"
                                 value={stats?.votes}
                                 description="Suara yang tersimpan"
-                                icon="✓"
                             />
 
                             <StatCard
                                 title="Total Periode"
                                 value={stats?.periods?.total}
                                 description={`${stats?.periods?.ongoing ?? 0} periode sedang berlangsung`}
-                                icon="▣"
                             />
                         </div>
                     </section>
@@ -106,24 +98,33 @@ export default function AdminDashboard({
                         </h2>
 
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                            {/* Draft */}
                             <div className="rounded-2xl border border-white/10 bg-[#151015] p-5">
-                                <p className="text-sm text-gray-400">Draft</p>
+                                <p className="text-sm text-gray-400">
+                                    Draft
+                                </p>
                                 <p className="mt-2 text-2xl font-black text-yellow-400">
                                     {stats?.periods?.draft ?? 0}
                                 </p>
                             </div>
 
+                            {/* Published */}
                             <div className="rounded-2xl border border-white/10 bg-[#151015] p-5">
-                                <p className="text-sm text-gray-400">Published</p>
+                                <p className="text-sm text-gray-400">
+                                    Published
+                                </p>
                                 <p className="mt-2 text-2xl font-black text-green-400">
                                     {stats?.periods?.published ?? 0}
                                 </p>
                             </div>
 
+                            {/* Selesai */}
                             <div className="rounded-2xl border border-white/10 bg-[#151015] p-5">
-                                <p className="text-sm text-gray-400">Closed</p>
+                                <p className="text-sm text-gray-400">
+                                    Selesai
+                                </p>
                                 <p className="mt-2 text-2xl font-black text-gray-300">
-                                    {stats?.periods?.closed ?? 0}
+                                    {stats?.periods?.completed ?? 0}
                                 </p>
                             </div>
                         </div>
@@ -145,7 +146,7 @@ export default function AdminDashboard({
                                 href="/admin/periods"
                                 className="inline-flex w-fit items-center rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold transition hover:bg-red-500"
                             >
-                                Kelola Periode →
+                                Kelola Periode
                             </Link>
                         </div>
 
@@ -170,12 +171,15 @@ export default function AdminDashboard({
                                                 <td className="px-5 py-4 font-semibold text-white">
                                                     {period.name}
                                                 </td>
+
                                                 <td className="px-5 py-4 text-gray-400">
                                                     {period.start_at ?? '—'}
                                                 </td>
+
                                                 <td className="px-5 py-4 text-gray-400">
                                                     {period.end_at ?? '—'}
                                                 </td>
+
                                                 <td className="px-5 py-4">
                                                     <span
                                                         className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
@@ -204,7 +208,7 @@ export default function AdminDashboard({
                                     href="/admin/periods/create"
                                     className="mt-5 inline-flex rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold hover:bg-red-500"
                                 >
-                                    + Buat Periode
+                                    Buat Periode
                                 </Link>
                             </div>
                         )}
@@ -212,7 +216,9 @@ export default function AdminDashboard({
 
                     {/* Aksi cepat */}
                     <section>
-                        <h2 className="mb-4 text-lg font-bold">Aksi Cepat</h2>
+                        <h2 className="mb-4 text-lg font-bold">
+                            Aksi Cepat
+                        </h2>
 
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <Link
@@ -220,7 +226,7 @@ export default function AdminDashboard({
                                 className="group rounded-2xl border border-white/10 bg-[#151015] p-5 transition hover:border-red-500/40"
                             >
                                 <p className="font-bold transition group-hover:text-red-400">
-                                    Kelola Member →
+                                    Kelola Member
                                 </p>
                                 <p className="mt-2 text-sm text-gray-500">
                                     Tambah, edit, dan kelola data member.
@@ -232,7 +238,7 @@ export default function AdminDashboard({
                                 className="group rounded-2xl border border-white/10 bg-[#151015] p-5 transition hover:border-red-500/40"
                             >
                                 <p className="font-bold transition group-hover:text-red-400">
-                                    Buat Periode Voting →
+                                    Buat Periode Voting
                                 </p>
                                 <p className="mt-2 text-sm text-gray-500">
                                     Siapkan periode voting baru.

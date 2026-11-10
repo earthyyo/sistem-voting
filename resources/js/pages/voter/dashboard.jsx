@@ -85,9 +85,7 @@ function StatCard({ label, value, description, icon }) {
             <div className="flex items-center justify-between gap-3">
                 <p className="text-sm text-zinc-400">{label}</p>
 
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-400">
-                    <Icon name={icon} />
-                </div>
+                
             </div>
 
             <h3 className="mt-5 text-3xl font-black tracking-tight">
@@ -287,11 +285,6 @@ export default function Dashboard({
                     <div className="pointer-events-none absolute bottom-0 right-20 h-24 w-48 rounded-full bg-rose-500/10 blur-[70px]" />
 
                     <div className="relative max-w-2xl">
-                        <span className="inline-flex items-center gap-2 rounded-full border border-red-300/20 bg-black/20 px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-red-200">
-                            <span className="h-2 w-2 rounded-full bg-green-400" />
-                            SSK Voting 2026
-                        </span>
-
                         <h1 className="mt-6 text-3xl font-black leading-tight sm:text-4xl lg:text-5xl">
                             Welcome back,
                             <br className="sm:hidden" />{' '}
@@ -310,7 +303,7 @@ export default function Dashboard({
                             href="/members"
                             className="mt-7 inline-flex items-center gap-3 rounded-xl bg-red-600 px-5 py-3.5 text-sm font-black transition hover:-translate-y-0.5 hover:bg-red-500"
                         >
-                            Vote Sekarang <span>→</span>
+                            Vote Sekarang <span></span>
                         </a>
                     </div>
                 </section>

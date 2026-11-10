@@ -1,44 +1,46 @@
+
 import React from 'react';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import AdminLayout from '../../../layouts/AdminLayout';
 
-export default function Index({ votes, periods = [], stats = {}, filters = {} }) {
-    const { url } = usePage();
-
+export default function Index({
+    votes,
+    periods = [],
+    stats = {},
+    filters = {},
+}) {
     function handleSearch(event) {
         event.preventDefault();
 
         const formData = new FormData(event.currentTarget);
 
-        router.get('/admin/votes', {
-            search: formData.get('search') || '',
-            period_id: filters.period_id || '',
-        }, {
-            preserveState: true,
-            replace: true,
-        });
+        router.get(
+            '/admin/votes',
+            {
+                search: formData.get('search') || '',
+                period_id: filters.period_id || '',
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            }
+        );
     }
 
     function handlePeriodChange(event) {
-        router.get('/admin/votes', {
-            search: filters.search || '',
-            period_id: event.target.value,
-        }, {
-            preserveState: true,
-            replace: true,
-        });
-    }
-
-    function formatDate(date) {
-        if (!date) return '-';
-
-        return new Date(date).toLocaleString('id-ID', {
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-        });
+        router.get(
+            '/admin/votes',
+            {
+                search: filters.search || '',
+                period_id: event.target.value,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            }
+        );
     }
 
     return (
@@ -46,9 +48,10 @@ export default function Index({ votes, periods = [], stats = {}, filters = {} })
             <Head title="Data Vote" />
 
             <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6">
+                {/* Header */}
                 <header>
                     <p className="text-sm font-semibold uppercase tracking-[0.2em] text-red-500">
-                        SSK.VOTE / ADMIN
+                        SSK.VOTE ADMIN
                     </p>
 
                     <h1 className="mt-2 text-3xl font-bold">
@@ -56,7 +59,7 @@ export default function Index({ votes, periods = [], stats = {}, filters = {} })
                     </h1>
 
                     <p className="mt-2 text-sm text-gray-400">
-                        Seluruh transaksi voting dari semua periode.
+                        Rekap jumlah suara setiap member berdasarkan periode voting.
                     </p>
                 </header>
 
@@ -66,23 +69,27 @@ export default function Index({ votes, periods = [], stats = {}, filters = {} })
                         <p className="text-sm text-gray-400">
                             Total Suara
                         </p>
+
                         <p className="mt-2 text-3xl font-bold text-red-400">
-                            {(stats.totalVotes ?? 0).toLocaleString('id-ID')}
+                            {Number(stats.totalVotes ?? 0).toLocaleString('id-ID')}
                         </p>
+
                         <p className="mt-1 text-xs text-gray-500">
-                            Akumulasi seluruh quantity
+                            Total suara pada periode yang dipilih
                         </p>
                     </div>
 
                     <div className="rounded-2xl border border-white/10 bg-[#151014] p-5">
                         <p className="text-sm text-gray-400">
-                            Total Transaksi
+                            Total Member Mendapat Suara
                         </p>
+
                         <p className="mt-2 text-3xl font-bold text-white">
-                            {(stats.totalTransactions ?? 0).toLocaleString('id-ID')}
+                            {(votes?.total ?? 0).toLocaleString('id-ID')}
                         </p>
+
                         <p className="mt-1 text-xs text-gray-500">
-                            Jumlah transaksi voting
+                            Jumlah member dalam hasil rekap
                         </p>
                     </div>
                 </div>
@@ -110,62 +117,98 @@ export default function Index({ votes, periods = [], stats = {}, filters = {} })
                     </form>
 
                     <div className="mt-3">
-                        <select
-                            value={filters.period_id || ''}
-                            onChange={handlePeriodChange}
-                            className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none focus:border-red-500 sm:max-w-xs"
+                        <label
+                            htmlFor="period_id"
+                            className="mb-2 block text-sm text-gray-400"
                         >
-                            <option value="">Semua Periode</option>
-                            {periods.map((period) => (
-                                <option key={period.id} value={period.id}>
-                                    {period.name}
+                            Filter Periode
+                        </label>
+
+                        <select
+                            id="period_id"
+                            value={filters.period_id ?? ''}
+                            onChange={handlePeriodChange}
+                            disabled={periods.length === 0}
+                            className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none focus:border-red-500 disabled:opacity-50 sm:max-w-md"
+                        >
+                            {periods.length === 0 ? (
+                                <option value="">
+                                    Belum ada periode berlangsung atau selesai
                                 </option>
-                            ))}
+                            ) : (
+                                periods.map((period) => (
+                                    <option
+                                        key={period.id}
+                                        value={period.id}
+                                        className="bg-[#151014]"
+                                    >
+                                        {period.name}
+                                        {period.status === 'closed' ||
+                                        new Date(period.end_at) < new Date()
+                                            ? ' (Selesai)'
+                                            : ' (Berlangsung)'}
+                                    </option>
+                                ))
+                            )}
                         </select>
                     </div>
                 </section>
 
-                {/* Tabel */}
+                {/* Tabel Rekap Vote */}
                 <section className="overflow-hidden rounded-2xl border border-white/10 bg-[#151014]">
                     <div className="border-b border-white/10 p-5">
-                        <h2 className="font-bold">Riwayat Transaksi Voting</h2>
+                        <h2 className="font-bold">
+                            Rekap Suara Member
+                        </h2>
+
                         <p className="mt-1 text-xs text-gray-500">
-                            Informasi voter tidak ditampilkan.
+                            Setiap member ditampilkan satu kali berdasarkan total suara yang diterima.
                         </p>
                     </div>
 
                     <div className="overflow-x-auto">
-                        <table className="w-full min-w-[750px] text-left text-sm">
+                        <table className="w-full min-w-[500px] text-left text-sm">
                             <thead className="bg-white/5 text-gray-400">
                                 <tr>
-                                    <th className="px-5 py-4">Member</th>
-                                    <th className="px-5 py-4">Periode</th>
-                                    <th className="px-5 py-4">Jumlah Suara</th>
-                                    <th className="px-5 py-4">Tanggal Transaksi</th>
+                                    <th className="px-5 py-4">
+                                        Member
+                                    </th>
+
+                                    <th className="px-5 py-4">
+                                        Jumlah Suara
+                                    </th>
                                 </tr>
                             </thead>
 
                             <tbody className="divide-y divide-white/10">
                                 {!votes?.data?.length ? (
                                     <tr>
-                                        <td colSpan="4" className="px-5 py-12 text-center text-gray-400">
-                                            Belum ada transaksi voting.
+                                        <td
+                                            colSpan="2"
+                                            className="px-5 py-12 text-center text-gray-400"
+                                        >
+                                            Belum ada suara pada periode ini.
                                         </td>
                                     </tr>
                                 ) : (
                                     votes.data.map((vote) => (
-                                        <tr key={vote.id} className="hover:bg-white/[0.03]">
+                                        <tr
+                                            key={vote.id}
+                                            className="transition hover:bg-white/[0.03]"
+                                        >
                                             <td className="px-5 py-4">
                                                 <div className="flex items-center gap-3">
                                                     {vote.member_photo ? (
                                                         <img
                                                             src={vote.member_photo}
                                                             alt={vote.member_name}
-                                                            className="h-11 w-11 rounded-full object-cover"
+                                                            className="h-12 w-12 rounded-full object-cover"
                                                         />
                                                     ) : (
-                                                        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-red-950 font-bold text-red-300">
-                                                            {vote.member_name?.charAt(0)?.toUpperCase() || '?'}
+                                                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-950 font-bold text-red-300">
+                                                            {vote.member_name
+                                                                ?.charAt(0)
+                                                                ?.toUpperCase() || '?'}
                                                         </div>
                                                     )}
 
@@ -173,6 +216,7 @@ export default function Index({ votes, periods = [], stats = {}, filters = {} })
                                                         <p className="font-semibold text-white">
                                                             {vote.member_name}
                                                         </p>
+
                                                         <p className="mt-1 text-xs text-gray-500">
                                                             {vote.member_team || '-'}
                                                         </p>
@@ -180,18 +224,10 @@ export default function Index({ votes, periods = [], stats = {}, filters = {} })
                                                 </div>
                                             </td>
 
-                                            <td className="px-5 py-4 text-gray-300">
-                                                {vote.period_name}
-                                            </td>
-
                                             <td className="px-5 py-4">
-                                                <span className="rounded-lg bg-red-950 px-3 py-1 font-bold text-red-300">
-                                                    {vote.quantity} suara
+                                                <span className="inline-flex rounded-lg bg-red-950 px-3 py-1.5 font-bold text-red-300">
+                                                    {Number(vote.quantity).toLocaleString('id-ID')} suara
                                                 </span>
-                                            </td>
-
-                                            <td className="px-5 py-4 text-gray-400">
-                                                {formatDate(vote.created_at)}
                                             </td>
                                         </tr>
                                     ))
@@ -200,10 +236,12 @@ export default function Index({ votes, periods = [], stats = {}, filters = {} })
                         </table>
                     </div>
 
+                    {/* Pagination */}
                     {votes?.links && (
                         <div className="flex flex-col gap-3 border-t border-white/10 p-4 sm:flex-row sm:items-center sm:justify-between">
                             <p className="text-sm text-gray-400">
-                                Menampilkan {votes.from ?? 0}–{votes.to ?? 0} dari {votes.total ?? 0} transaksi
+                                Menampilkan {votes.from ?? 0}–{votes.to ?? 0} dari{' '}
+                                {votes.total ?? 0} member
                             </p>
 
                             <div className="flex flex-wrap gap-2">
@@ -212,7 +250,12 @@ export default function Index({ votes, periods = [], stats = {}, filters = {} })
                                         key={index}
                                         type="button"
                                         disabled={!link.url}
-                                        onClick={() => link.url && router.visit(link.url)}
+                                        onClick={() =>
+                                            link.url && router.visit(link.url, {
+                                                preserveState: true,
+                                                preserveScroll: true,
+                                            })
+                                        }
                                         className={`rounded-lg px-3 py-2 text-sm ${
                                             link.active
                                                 ? 'bg-red-600 text-white'

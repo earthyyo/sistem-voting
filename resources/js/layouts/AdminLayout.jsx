@@ -62,7 +62,7 @@ export default function AdminLayout({
 
                         <span className="font-semibold">
                             SSK.VOTE{' '}
-                            <span className="text-red-500">/ Admin</span>
+                            <span className="text-red-500"> ADMIN</span>
                         </span>
 
                         <div className="ml-auto">

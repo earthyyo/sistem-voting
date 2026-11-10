@@ -9,7 +9,7 @@ export default function VotingPeriodIndex({ periods }) {
     function closePeriod(period) {
         if (
             window.confirm(
-                `Yakin ingin menutup periode "${period.name}"?`
+                `Yakin ingin menutup periode "${period.name}"? Statusnya akan menjadi Private / Tutup.`
             )
         ) {
             router.patch(`/admin/periods/${period.id}/close`);
@@ -33,35 +33,36 @@ export default function VotingPeriodIndex({ periods }) {
     }
 
     function getStatus(period) {
-        if (period.status === 'closed') return 'Ditutup';
-        if (period.status === 'draft') return 'Draft';
-        if (period.is_voting_open) return 'Berlangsung';
+        if (period.status === 'selesai') return 'Selesai';
+        if (period.status === 'private') return 'Private / Tutup';
 
-        return 'Terjadwal';
+        return 'Published';
     }
 
     function getStatusClass(period) {
-        if (period.status === 'closed') {
-            return 'bg-gray-500/15 text-gray-300';
-        }
-
-        if (period.status === 'draft') {
+        if (period.status === 'selesai') {
             return 'bg-yellow-500/15 text-yellow-300';
         }
 
-        if (period.is_voting_open) {
-            return 'bg-green-500/15 text-green-300';
+        if (period.status === 'private') {
+            return 'bg-gray-500/15 text-gray-300';
         }
 
-        return 'bg-blue-500/15 text-blue-300';
+        return 'bg-green-500/15 text-green-300';
     }
 
     const items = periods.data ?? [];
-    const openCount = items.filter(
-        (period) => period.is_voting_open
+
+    const publishedCount = items.filter(
+        (period) => period.status === 'published'
     ).length;
-    const draftCount = items.filter(
-        (period) => period.status === 'draft'
+
+    const privateCount = items.filter(
+        (period) => period.status === 'private'
+    ).length;
+
+    const completedCount = items.filter(
+        (period) => period.status === 'selesai'
     ).length;
 
     const cardClass =
@@ -73,10 +74,12 @@ export default function VotingPeriodIndex({ periods }) {
 
             <div className="min-h-screen bg-[#0b080a] p-4 text-white sm:p-6 lg:p-8">
                 <div className="mx-auto max-w-7xl space-y-7">
+
+                    {/* HEADER */}
                     <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
                         <div>
                             <p className="text-xs font-bold tracking-[0.3em] text-red-500">
-                                SSK.VOTE / ADMIN
+                                SSK.VOTE ADMIN
                             </p>
 
                             <h1 className="mt-3 text-3xl font-bold sm:text-4xl">
@@ -96,16 +99,18 @@ export default function VotingPeriodIndex({ periods }) {
                         </Link>
                     </header>
 
+                    {/* FLASH MESSAGE */}
                     {flash?.success && (
                         <div className="rounded-xl border border-green-500/20 bg-green-500/10 p-4 text-sm text-green-300">
                             {flash.success}
                         </div>
                     )}
 
-                    <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    {/* STATISTIK */}
+                    <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <div className={cardClass}>
                             <p className="text-sm text-gray-400">
-                                Total periode
+                                Total Periode
                             </p>
                             <p className="mt-3 text-3xl font-bold">
                                 {periods.total ?? items.length}
@@ -117,29 +122,42 @@ export default function VotingPeriodIndex({ periods }) {
 
                         <div className={cardClass}>
                             <p className="text-sm text-gray-400">
-                                Sedang berlangsung
+                                Published
                             </p>
                             <p className="mt-3 text-3xl font-bold text-green-400">
-                                {openCount}
+                                {publishedCount}
                             </p>
                             <p className="mt-1 text-xs text-gray-500">
-                                Dari periode di halaman ini
+                                Belum melewati waktu akhir
                             </p>
                         </div>
 
                         <div className={cardClass}>
                             <p className="text-sm text-gray-400">
-                                Draft
+                                Private / Tutup
                             </p>
-                            <p className="mt-3 text-3xl font-bold text-yellow-300">
-                                {draftCount}
+                            <p className="mt-3 text-3xl font-bold text-gray-300">
+                                {privateCount}
                             </p>
                             <p className="mt-1 text-xs text-gray-500">
-                                Belum dipublikasikan
+                                Tidak dipublikasikan atau ditutup
+                            </p>
+                        </div>
+
+                        <div className={cardClass}>
+                            <p className="text-sm text-gray-400">
+                                Selesai
+                            </p>
+                            <p className="mt-3 text-3xl font-bold text-yellow-300">
+                                {completedCount}
+                            </p>
+                            <p className="mt-1 text-xs text-gray-500">
+                                Otomatis setelah waktu berakhir
                             </p>
                         </div>
                     </section>
 
+                    {/* DAFTAR PERIODE */}
                     <section className="overflow-hidden rounded-2xl border border-white/10 bg-[#151014]">
                         <div className="flex flex-col gap-2 border-b border-white/10 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
                             <div>
@@ -167,8 +185,8 @@ export default function VotingPeriodIndex({ periods }) {
                                 </h3>
 
                                 <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-gray-400">
-                                    Buat periode pertama untuk menentukan
-                                    jadwal dan aturan voting SSK.VOTE.
+                                    Buat periode pertama untuk menentukan jadwal
+                                    dan aturan voting SSK.VOTE.
                                 </p>
 
                                 <Link
@@ -249,12 +267,10 @@ export default function VotingPeriodIndex({ periods }) {
                                                             Edit
                                                         </Link>
 
-                                                        {period.status !== 'closed' && (
+                                                        {period.status === 'published' && (
                                                             <button
                                                                 type="button"
-                                                                onClick={() =>
-                                                                    closePeriod(period)
-                                                                }
+                                                                onClick={() => closePeriod(period)}
                                                                 className="font-medium text-gray-400 hover:text-white"
                                                             >
                                                                 Tutup
@@ -269,6 +285,7 @@ export default function VotingPeriodIndex({ periods }) {
                             </div>
                         )}
 
+                        {/* PAGINATION */}
                         {periods.links && periods.links.length > 3 && (
                             <div className="flex flex-wrap gap-2 border-t border-white/10 p-4">
                                 {periods.links.map((link, index) => (

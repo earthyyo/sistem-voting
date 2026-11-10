@@ -75,8 +75,8 @@ export default function Home({
     featuredMembers = [],
     activePeriod = null,
     isAuthenticated = false,
-    resultsPublished = false,
-    finalRanking = [],
+    finalSenbatsuPeriod = null,
+    finalSenbatsu = [],
 }) {
     const teamMembers = teams.map((team) => ({
         team,
@@ -89,11 +89,9 @@ export default function Home({
     }));
 
     // Hanya menampilkan maksimal 12 hasil final.
-    const ranking = resultsPublished
-        ? [...finalRanking]
+    const ranking = [...finalSenbatsu]
               .sort((a, b) => Number(a.rank) - Number(b.rank))
-              .slice(0, 12)
-        : [];
+              .slice(0, 12);
 
     return (
         <main className="min-h-screen overflow-hidden bg-[#0b080a] text-white">
@@ -218,66 +216,8 @@ export default function Home({
                             </div>
                         </div>
                     </div>
-
-                    {/* HERO VISUAL */}
-                    <div className="relative mx-auto w-full max-w-lg">
-                        <div className="absolute -inset-4 rounded-[2rem] bg-red-600/20 blur-2xl" />
-
-                        <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-[#3a101b] via-[#180d13] to-[#090709] p-6 sm:p-9">
-                            <div className="absolute right-0 top-0 h-56 w-56 rounded-full bg-red-500/20 blur-3xl" />
-
-                            <div className="relative flex items-center justify-between">
-                                <span className="rounded-full border border-white/10 bg-black/30 px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-300">
-                                    The Road to Senbatsu
-                                </span>
-                                <span className="text-2xl text-yellow-400">✦</span>
-                            </div>
-
-                            <div className="relative my-10 flex min-h-64 flex-col items-center justify-center text-center">
-                                <div className="absolute h-44 w-44 rounded-full border border-red-400/20" />
-                                <div className="absolute h-60 w-60 rounded-full border border-red-400/10" />
-
-                                <div className="relative flex h-32 w-32 items-center justify-center rounded-full border border-red-300/30 bg-gradient-to-br from-red-500 to-[#4b0715] shadow-2xl shadow-red-950">
-                                    <span className="text-6xl font-black text-white">推</span>
-                                </div>
-
-                                <p className="mt-6 text-xs font-black uppercase tracking-[0.4em] text-red-300">
-                                    Believe in your oshi
-                                </p>
-                                <h2 className="mt-3 text-3xl font-black sm:text-4xl">
-                                    Make Her Shine.
-                                </h2>
-                            </div>
-
-                            <div className="relative rounded-2xl border border-white/10 bg-black/30 p-4">
-                                <div className="flex items-center justify-between gap-4">
-                                    <div>
-                                        <p className="text-xs text-zinc-500">
-                                            Satu suara, satu harapan
-                                        </p>
-                                        <p className="mt-1 font-bold">
-                                            Perjalanan dimulai dari kamu.
-                                        </p>
-                                    </div>
-                                    <span className="text-3xl text-red-500">♥</span>
-                                </div>
-                            </div>
-
-                            <div className="absolute -right-2 top-28 rounded-xl border border-yellow-400/20 bg-[#21170c] px-4 py-3 shadow-xl sm:-right-4">
-                                <p className="text-[9px] font-bold uppercase tracking-widest text-yellow-500">
-                                    Your support
-                                </p>
-                                <p className="mt-1 text-sm font-black">Matters ✦</p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </section>
-
-            {/* PERIODE VOTING */}
-<section className="mx-auto max-w-7xl px-5 py-8 md:px-10">
-    <PeriodCountdown period={activePeriod} />
-</section>
 
             {/* ABOUT */}
             <section id="tentang" className="border-y border-white/10 bg-white/[0.02]">
@@ -304,7 +244,7 @@ export default function Home({
                     ].map((item) => (
                         <div key={item.number} className="group">
                             <p className="text-sm font-black tracking-widest text-red-500">
-                                / {item.number}
+                                 {item.number}
                             </p>
                             <h3 className="mt-4 text-xl font-black transition group-hover:text-red-400">
                                 {item.title}
@@ -391,150 +331,106 @@ export default function Home({
                 </div>
             </section>
 
-            {/* FINAL RANKING: ONLY AFTER RESULTS ARE PUBLISHED */}
-            <section id="ranking" className="border-y border-white/10 bg-[#110b0f]">
-                <div className="mx-auto max-w-7xl px-5 py-20 md:px-10 md:py-24">
-                    <SectionTitle
-                        eyebrow="Final Senbatsu"
-                        title="Top 12 Senbatsu"
-                        description={
-                            resultsPublished
-                                ? 'Hasil akhir perolehan suara periode voting.'
-                                : 'Peringkat dan total vote akan diumumkan setelah periode voting berakhir.'
-                        }
-                    />
+            
+{/* FINAL RANKING: LAST COMPLETED PERIOD */}
+<section id="ranking" className="border-y border-white/10 bg-[#110b0f]">
+    <div className="mx-auto max-w-7xl px-5 py-20 md:px-10 md:py-24">
+        <SectionTitle
+            eyebrow="Final Senbatsu"
+            title="Top 12 Senbatsu"
+            description={
+                finalSenbatsuPeriod
+                    ? `Hasil akhir ${finalSenbatsuPeriod.name} berdasarkan jumlah vote terbanyak.`
+                    : 'Peringkat final akan ditampilkan setelah periode voting selesai.'
+            }
+        />
 
-                    {!resultsPublished ? (
-                        <div className="rounded-2xl border border-white/10 bg-[#151014] px-6 py-12 text-center">
-                            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/10 text-2xl text-red-400">
-                                ✦
+        {finalSenbatsuPeriod && ranking.length > 0 ? (
+            <>
+                <div className="mb-5 rounded-xl border border-red-500/20 bg-red-500/5 px-5 py-4">
+                    <p className="text-xs font-bold uppercase tracking-widest text-red-400">
+                        Periode Terakhir
+                    </p>
+                    <h3 className="mt-1 text-lg font-black text-white">
+                        {finalSenbatsuPeriod.name}
+                    </h3>
+                </div>
+
+                <div className="overflow-hidden rounded-2xl border border-white/10">
+                    <div className="grid grid-cols-[60px_1fr_auto] items-center gap-4 bg-white/[0.04] px-5 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-500 sm:grid-cols-[80px_1fr_120px_130px]">
+                        <span>Rank</span>
+                        <span>Member</span>
+                        <span className="hidden sm:block">Team</span>
+                        <span className="text-right">Total Vote</span>
+                    </div>
+
+                    {ranking.map((member, index) => (
+                        <div
+                            key={member.id}
+                            className="grid grid-cols-[60px_1fr_auto] items-center gap-4 border-t border-white/10 px-5 py-5 transition hover:bg-white/[0.03] sm:grid-cols-[80px_1fr_120px_130px]"
+                        >
+                            <div
+                                className={`flex h-10 w-10 items-center justify-center rounded-xl text-sm font-black ${
+                                    index === 0
+                                        ? 'bg-yellow-400 text-black'
+                                        : index === 1
+                                          ? 'bg-zinc-300 text-black'
+                                          : index === 2
+                                            ? 'bg-orange-800/60 text-orange-200'
+                                            : 'bg-white/5 text-zinc-400'
+                                }`}
+                            >
+                                {member.rank ?? index + 1}
                             </div>
-                            <h3 className="mt-5 text-lg font-black">
-                                Hasil belum diumumkan
-                            </h3>
-                            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-500">
-                                Tunggu sampai periode voting selesai untuk
-                                melihat peringkat 1–12 dan total vote final.
-                            </p>
-                        </div>
-                    ) : ranking.length > 0 ? (
-                        <div className="overflow-hidden rounded-2xl border border-white/10">
-                            <div className="grid grid-cols-[60px_1fr_auto] items-center gap-4 bg-white/[0.04] px-5 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-500 sm:grid-cols-[80px_1fr_120px_130px]">
-                                <span>Rank</span>
-                                <span>Member</span>
-                                <span className="hidden sm:block">Team</span>
-                                <span className="text-right">Total Vote</span>
-                            </div>
 
-                            {ranking.map((member, index) => (
-                                <div
-                                    key={member.id}
-                                    className="grid grid-cols-[60px_1fr_auto] items-center gap-4 border-t border-white/10 px-5 py-5 transition hover:bg-white/[0.03] sm:grid-cols-[80px_1fr_120px_130px]"
-                                >
-                                    <div
-                                        className={`flex h-10 w-10 items-center justify-center rounded-xl text-sm font-black ${
-                                            index === 0
-                                                ? 'bg-yellow-400 text-black'
-                                                : index === 1
-                                                  ? 'bg-zinc-300 text-black'
-                                                  : index === 2
-                                                    ? 'bg-orange-800/60 text-orange-200'
-                                                    : 'bg-white/5 text-zinc-400'
-                                        }`}
-                                    >
-                                        {member.rank ?? index + 1}
-                                    </div>
+                            <div className="flex min-w-0 items-center gap-3">
+                                <MemberPhoto
+                                    member={member}
+                                    className="h-11 w-11 shrink-0 rounded-xl"
+                                />
 
-                                    <div className="flex min-w-0 items-center gap-3">
-                                        <MemberPhoto
-                                            member={member}
-                                            className="h-11 w-11 shrink-0 rounded-xl"
-                                        />
-                                        <div className="min-w-0">
-                                            <p className="truncate font-bold">
-                                                {member.name}
-                                            </p>
-                                            <p className="mt-1 text-xs text-zinc-500">
-                                                {member.generation
-                                                    ? `${member.generation} Generation`
-                                                    : `Team ${member.team ?? '-'}`}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <span className="hidden text-sm text-zinc-400 sm:block">
-                                        {member.team ?? '-'}
-                                    </span>
-
-                                    <p className="text-right text-sm font-black text-red-300">
-                                        {new Intl.NumberFormat('id-ID').format(
-                                            member.total_votes ?? 0
-                                        )}
+                                <div className="min-w-0">
+                                    <p className="truncate font-bold">
+                                        {member.name}
+                                    </p>
+                                    <p className="mt-1 text-xs text-zinc-500">
+                                        {member.generation
+                                            ? `${member.generation} Generation`
+                                            : `Team ${member.team ?? '-'}`}
                                     </p>
                                 </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="rounded-2xl border border-white/10 bg-[#151014] px-6 py-10 text-center">
-                            <p className="font-bold text-zinc-300">
-                                Hasil final belum tersedia.
+                            </div>
+
+                            <span className="hidden text-sm text-zinc-400 sm:block">
+                                {member.team ?? '-'}
+                            </span>
+
+                            <p className="text-right text-sm font-black text-red-300">
+                                {new Intl.NumberFormat('id-ID').format(
+                                    member.total_votes ?? 0
+                                )}
                             </p>
-                            <p className="mt-2 text-sm text-zinc-500">
-                                Data Top 12 belum dikirim oleh server.
-                            </p>
                         </div>
-                    )}
+                    ))}
                 </div>
-            </section>
+            </>
+        ) : (
+            <div className="rounded-2xl border border-white/10 bg-[#151014] px-6 py-12 text-center">
+                <h3 className="text-lg font-black">
+                    {finalSenbatsuPeriod
+                        ? 'Belum ada hasil voting'
+                        : 'Belum ada periode yang selesai'}
+                </h3>
+                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-500">
+                    {finalSenbatsuPeriod
+                        ? 'Belum ada member yang mendapatkan suara pada periode ini.'
+                        : 'Hasil Final Senbatsu akan muncul otomatis setelah periode voting berakhir.'}
+                </p>
+            </div>
+        )}
+    </div>
+</section>
 
-            {/* NEWS */}
-            <section id="berita" className="mx-auto max-w-7xl px-5 py-20 md:px-10 md:py-24">
-                <SectionTitle
-                    eyebrow="Latest Updates"
-                    title="Stay in the Loop."
-                    description="Informasi periode voting, pengumuman, dan kabar terbaru seputar event."
-                />
-
-                <div className="grid gap-5 md:grid-cols-2">
-                    <article className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#32101b] to-[#151014] p-7 sm:p-9">
-                        <span className="inline-flex rounded-full bg-red-500/15 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-red-300">
-                            Announcement
-                        </span>
-                        <h3 className="mt-5 text-2xl font-black">
-                            Siap mendukung oshi kamu?
-                        </h3>
-                        <p className="mt-3 text-sm leading-6 text-zinc-400">
-                            Masuk ke akunmu untuk melihat kuota voting, memilih
-                            member, dan memantau riwayat dukunganmu.
-                        </p>
-                        <a
-                            href="/login"
-                            className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-red-400 hover:text-red-300"
-                        >
-                            Login sekarang <ArrowIcon />
-                        </a>
-                    </article>
-
-                    <article className="rounded-2xl border border-white/10 bg-[#151014] p-7 sm:p-9">
-                        <span className="inline-flex rounded-full bg-yellow-400/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-yellow-400">
-                            Voting Guide
-                        </span>
-                        <h3 className="mt-5 text-2xl font-black">
-                            Setiap suara punya arti.
-                        </h3>
-                        <p className="mt-3 text-sm leading-6 text-zinc-400">
-                            Pelajari cara kerja kuota voting dan cara memilih
-                            member favoritmu sebelum periode berakhir.
-                        </p>
-                        <a
-                            href="#tentang"
-                            className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-yellow-400 hover:text-yellow-300"
-                        >
-                            Pelajari alurnya <ArrowIcon />
-                        </a>
-                    </article>
-                </div>
-            </section>
 
             {/* CTA */}
             <section className="px-5 pb-20 md:px-10 md:pb-24">
@@ -571,15 +467,9 @@ export default function Home({
                             SSK<span className="text-red-500">.</span>VOTE
                         </p>
                         <p className="mt-1 text-xs text-zinc-600">
-                            Fan voting demo platform.
+                            Fan voting platform.
                         </p>
                     </div>
-
-                    <p className="text-xs leading-5 text-zinc-600 md:text-right">
-                        Proyek simulasi voting untuk pembelajaran.
-                        <br />
-                        Tidak berafiliasi dengan sistem voting resmi JKT48.
-                    </p>
                 </div>
             </footer>
         </main>

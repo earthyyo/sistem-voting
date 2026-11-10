@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Member;
 use App\Models\Vote;
 use App\Models\VotingPeriod;
 use Illuminate\Http\Request;
@@ -14,48 +15,114 @@ class VoteController extends Controller
     public function index(Request $request): Response
     {
         $search = $request->query('search', '');
-        $periodId = $request->query('period_id');
+        $now = now();
 
-        $query = Vote::query()
-            ->with([
-                'member:id,name,photo_path,team',
-                'votingPeriod:id,name',
-            ])
-            ->when($search, function ($query, $search) {
-                $query->whereHas('member', function ($memberQuery) use ($search) {
-                    $memberQuery->where('name', 'like', "%{$search}%");
+        // Ambil periode yang sedang berlangsung atau sudah selesai.
+        $periods = VotingPeriod::query()
+            ->where(function ($query) use ($now) {
+                // Periode yang sedang berlangsung.
+                $query->where(function ($subQuery) use ($now) {
+                    $subQuery->where('status', 'published')
+                        ->where('start_at', '<=', $now)
+                        ->where('end_at', '>=', $now);
+                })
+
+                // Periode yang sudah selesai.
+                ->orWhere(function ($subQuery) use ($now) {
+                    $subQuery->where('status', '!=', 'draft')
+                        ->where(function ($endQuery) use ($now) {
+                            $endQuery->where('status', 'closed')
+                                ->orWhere('end_at', '<', $now);
+                        });
                 });
             })
-            ->when($periodId, function ($query, $periodId) {
-                $query->where('voting_period_id', $periodId);
+            ->orderByDesc('start_at')
+            ->get(['id', 'name', 'status', 'start_at', 'end_at']);
+
+        // Periode yang dipilih dari filter.
+        $periodId = $request->query('period_id');
+
+        // Jika belum memilih periode, gunakan periode aktif.
+        if (!$periodId) {
+            $selectedPeriod = $periods->first(function ($period) use ($now) {
+                return $period->status === 'published'
+                    && $period->start_at <= $now
+                    && $period->end_at >= $now;
             });
 
-        $totalVotes = (clone $query)->sum('quantity');
-        $totalTransactions = (clone $query)->count();
+            // Jika tidak ada periode aktif, gunakan periode terbaru.
+            $selectedPeriod ??= $periods->first();
 
-        $votes = $query
-            ->latest()
+            $periodId = $selectedPeriod?->id;
+        } else {
+            $selectedPeriod = $periods->firstWhere(
+                'id',
+                (int) $periodId
+            );
+
+            // Jika periode tidak termasuk pilihan yang tersedia,
+            // gunakan periode terbaru.
+            if (!$selectedPeriod) {
+                $selectedPeriod = $periods->first();
+                $periodId = $selectedPeriod?->id;
+            }
+        }
+
+        // Ambil member dan jumlah seluruh suara yang diterimanya
+        // pada periode yang sedang dipilih.
+        $membersQuery = Member::query()
+            ->whereHas('votes', function ($query) use ($periodId) {
+                $query->where('voting_period_id', $periodId);
+            })
+            ->withSum([
+                'votes as total_votes' => function ($query) use ($periodId) {
+                    $query->where('voting_period_id', $periodId);
+                },
+            ], 'quantity')
+            ->when($search, function ($query, $search) {
+                $query->where('name', 'like', "%{$search}%");
+            });
+
+        // Total suara mengikuti periode dan pencarian.
+        $totalVotes = Vote::query()
+            ->where('voting_period_id', $periodId)
+            ->when($search, function ($query, $search) {
+                $query->whereHas('member', function ($memberQuery) use ($search) {
+                    $memberQuery->where(
+                        'name',
+                        'like',
+                        "%{$search}%"
+                    );
+                });
+            })
+            ->sum('quantity');
+
+        // Satu member hanya tampil satu kali.
+        $votes = $membersQuery
+            ->orderByDesc('total_votes')
+            ->orderBy('name')
             ->paginate(10)
             ->withQueryString()
-            ->through(function ($vote) {
+            ->through(function ($member) use ($selectedPeriod) {
                 return [
-                    'id' => $vote->id,
-                    'member_name' => $vote->member?->name ?? 'Member tidak ditemukan',
-                    'member_photo' => $vote->member?->photo_url,
-                    'member_team' => $vote->member?->team,
-                    'period_name' => $vote->votingPeriod?->name ?? 'Periode tidak ditemukan',
-                    'quantity' => (int) $vote->quantity,
-                    'created_at' => $vote->created_at,
+                    'id' => $member->id,
+                    'member_name' => $member->name,
+                    'member_photo' => $member->photo_url,
+                    'member_team' => $member->team,
+                    'period_name' => $selectedPeriod?->name,
+                    'quantity' => (int) ($member->total_votes ?? 0),
                 ];
             });
 
         return Inertia::render('admin/votes/index', [
             'votes' => $votes,
-            'periods' => VotingPeriod::orderByDesc('start_at')
-                ->get(['id', 'name']),
+            'periods' => $periods->map(fn ($period) => [
+                'id' => $period->id,
+                'name' => $period->name,
+                'status' => $period->status,
+            ]),
             'stats' => [
                 'totalVotes' => (int) $totalVotes,
-                'totalTransactions' => $totalTransactions,
             ],
             'filters' => [
                 'search' => $search,

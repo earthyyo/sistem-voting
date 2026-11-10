@@ -21,58 +21,111 @@ class VoterController extends Controller
     // HALAMAN HOME
     // ========================================
 
-    public function home(): Response
-    {
-        $now = now();
+   
+public function home(): Response
+{
+    $now = now();
 
-        $activePeriod = VotingPeriod::query()
-            ->where('status', 'published')
-            ->where('start_at', '<=', $now)
-            ->where('end_at', '>=', $now)
-            ->orderBy('start_at')
-            ->first();
+    // PERIODE VOTING YANG SEDANG BERLANGSUNG
+    $activePeriod = VotingPeriod::query()
+        ->where('status', 'published')
+        ->where('start_at', '<=', $now)
+        ->where('end_at', '>=', $now)
+        ->orderBy('start_at')
+        ->first();
 
-        $teams = ['Love', 'Dream', 'Passion'];
+    // PERIODE TERAKHIR YANG SUDAH SELESAI
+    $lastCompletedPeriod = VotingPeriod::query()
+        ->where('status', '!=', 'draft')
+        ->where('end_at', '<=', $now)
+        ->orderByDesc('end_at')
+        ->first();
 
-        // Member unggulan tanpa menampilkan total suara.
-        $featuredMembers = collect($teams)
-            ->map(function ($team) {
-                $member = Member::query()
-                    ->where('is_active', true)
-                    ->where('team', $team)
-                    ->orderBy('name')
-                    ->first();
+    // FINAL SENBATSU RANKING 1-12
+    $finalSenbatsu = collect();
 
-                if (! $member) {
-                    return null;
-                }
-
-                return [
-                    'id' => $member->id,
-                    'name' => $member->name,
-                    'team' => $member->team,
-                    'generation' => $member->generation,
-                    'photo_url' => $member->photo_url,
-                ];
+    if ($lastCompletedPeriod) {
+        $finalSenbatsu = Member::query()
+            ->whereHas('votes', function ($query) use ($lastCompletedPeriod) {
+                $query->where(
+                    'voting_period_id',
+                    $lastCompletedPeriod->id
+                );
             })
-            ->filter()
-            ->values();
-
-        return Inertia::render('home', [
-            'featuredMembers' => $featuredMembers,
-
-            'activePeriod' => $activePeriod ? [
-                'id' => $activePeriod->id,
-                'name' => $activePeriod->name,
-                'start_at' => $activePeriod->start_at,
-                'end_at' => $activePeriod->end_at,
-                'status' => $activePeriod->status,
-            ] : null,
-
-            'isAuthenticated' => Auth::check(),
-        ]);
+            ->withSum([
+                'votes as total_votes' => function ($query) use ($lastCompletedPeriod) {
+                    $query->where(
+                        'voting_period_id',
+                        $lastCompletedPeriod->id
+                    );
+                },
+            ], 'quantity')
+            ->orderByDesc('total_votes')
+            ->orderBy('name')
+            ->limit(12)
+            ->get()
+            ->values()
+            ->map(fn ($member, $index) => [
+                'id' => $member->id,
+                'name' => $member->name,
+                'team' => $member->team,
+                'generation' => $member->generation,
+                'photo_url' => $member->photo_url,
+                'total_votes' => (int) $member->total_votes,
+                'rank' => $index + 1,
+            ]);
     }
 
+  
+    // MEMBER PREVIEW: SATU MEMBER SETIAP TEAM
+    $teams = ['Love', 'Dream', 'Passion'];
+
+    $featuredMembers = collect($teams)
+        ->map(function ($team) {
+            $member = Member::query()
+                ->where('is_active', true)
+                ->where('team', $team)
+                ->orderBy('name')
+                ->first();
+
+            if (! $member) {
+                return null;
+            }
+
+            return [
+                'id' => $member->id,
+                'name' => $member->name,
+                'team' => $member->team,
+                'generation' => $member->generation,
+                'photo_url' => $member->photo_url,
+            ];
+        })
+        ->filter()
+        ->values();
+
+    // KIRIM DATA KE HALAMAN HOME
+    return Inertia::render('home', [
+        'featuredMembers' => $featuredMembers,
+
+        'activePeriod' => $activePeriod ? [
+            'id' => $activePeriod->id,
+            'name' => $activePeriod->name,
+            'start_at' => $activePeriod->start_at,
+            'end_at' => $activePeriod->end_at,
+            'status' => $activePeriod->status,
+        ] : null,
+
+        'finalSenbatsuPeriod' => $lastCompletedPeriod ? [
+            'id' => $lastCompletedPeriod->id,
+            'name' => $lastCompletedPeriod->name,
+            'end_at' => $lastCompletedPeriod->end_at,
+        ] : null,
+
+        'finalSenbatsu' => $finalSenbatsu,
+
+        'isAuthenticated' => Auth::check(),
+    ]);
+}
 
     // ========================================
     // DASHBOARD VOTER
@@ -89,25 +142,29 @@ public function dashboard()
         ->where('end_at', '>=', now())
         ->first();
 
-    // Statistik voting voter
-    $totalVotes = 0;
-    $remainingQuota = 0;
+    // Total seluruh vote voter dari semua periode
+$totalVotes = Vote::where('user_id', $user->id)
+    ->sum('quantity');
 
-    if ($activePeriod) {
-        $totalVotes = Vote::where('user_id', $user->id)
-            ->where('voting_period_id', $activePeriod->id)
-            ->sum('quantity');
+// Sisa kuota hanya untuk periode yang sedang berlangsung
+$remainingQuota = 0;
 
-        $remainingQuota = max(
-            0,
-            $activePeriod->votes_per_voter - $totalVotes
-        );
-    }
+if ($activePeriod) {
+    $votesUsedInActivePeriod = Vote::where('user_id', $user->id)
+        ->where('voting_period_id', $activePeriod->id)
+        ->sum('quantity');
 
+    $remainingQuota = max(
+        0,
+        $activePeriod->votes_per_voter - $votesUsedInActivePeriod
+    );
+}
     // Periode terakhir yang hasilnya sudah diumumkan
-    $previousPeriod = VotingPeriod::whereNotNull('results_announced_at')
-        ->orderByDesc('results_announced_at')
-        ->first();
+   $previousPeriod = VotingPeriod::query()
+    ->where('status', '!=', 'draft')
+    ->where('end_at', '<=', now())
+    ->orderByDesc('end_at')
+    ->first();
 
     // Ranking member periode sebelumnya
     $previousRanking = collect();
@@ -153,9 +210,13 @@ public function dashboard()
     // DAFTAR MEMBER UNTUK VOTER
     // ========================================
 
-    public function members()
+   public function members(): Response
 {
-    $activePeriod = VotingPeriod::where('status', 'published')
+    $userId = Auth::id();
+
+    // Periode voting yang sedang berlangsung
+    $activePeriod = VotingPeriod::query()
+        ->where('status', 'published')
         ->where('start_at', '<=', now())
         ->where('end_at', '>=', now())
         ->first();
@@ -163,8 +224,11 @@ public function dashboard()
     $votesUsed = 0;
     $votesRemaining = 0;
 
-    if ($activePeriod) {
-        $votesUsed = Vote::where('user_id', Auth::id())
+    // Hitung kuota hanya jika user sudah login
+    // dan periode voting sedang berlangsung
+    if ($activePeriod && $userId) {
+        $votesUsed = Vote::query()
+            ->where('user_id', $userId)
             ->where('voting_period_id', $activePeriod->id)
             ->sum('quantity');
 
@@ -174,17 +238,21 @@ public function dashboard()
         );
     }
 
-    // Ambil member aktif dari database
-    $members = Member::where('is_active', true)
+    // Ambil seluruh member aktif
+    $members = Member::query()
+        ->where('is_active', true)
         ->orderBy('name')
         ->get()
-        ->map(function ($member) {
-            $member->photo_url = $member->photo
-                ? asset('storage/' . $member->photo)
-                : null;
-
-            return $member;
-        });
+        ->map(fn ($member) => [
+            'id' => $member->id,
+            'name' => $member->name,
+            'description' => $member->description,
+            'birth_place' => $member->birth_place,
+            'birth_date' => $member->birth_date,
+            'generation' => $member->generation,
+            'team' => $member->team,
+            'photo_url' => $member->photo_url,
+        ]);
 
     return Inertia::render('voter/members', [
         'members' => $members,
@@ -194,7 +262,6 @@ public function dashboard()
         'isAuthenticated' => Auth::check(),
     ]);
 }
-
     // ========================================
     // RANKING MEMBER
     // HANYA PERIODE YANG SUDAH DIUMUMKAN
@@ -203,24 +270,28 @@ public function dashboard()
     
 public function ranking(Request $request): Response
 {
-    $announcedPeriods = VotingPeriod::query()
-        ->whereNotNull('results_announced_at')
-        ->orderByDesc('results_announced_at')
+    // Ambil semua periode yang sudah selesai
+    $completedPeriods = VotingPeriod::query()
+        ->where('status', '!=', 'draft')
+        ->where('end_at', '<=', now())
+        ->orderByDesc('end_at')
         ->get([
             'id',
             'name',
             'start_at',
             'end_at',
-            'results_announced_at',
+            'status',
         ]);
 
-    $selectedPeriod = $announcedPeriods->firstWhere(
+    // Pilih periode berdasarkan parameter URL
+    $selectedPeriod = $completedPeriods->firstWhere(
         'id',
         (int) $request->query('period')
     );
 
-    if (!$selectedPeriod) {
-        $selectedPeriod = $announcedPeriods->first();
+    // Jika belum memilih, gunakan periode terbaru
+    if (! $selectedPeriod) {
+        $selectedPeriod = $completedPeriods->first();
     }
 
     $ranking = collect();
@@ -247,67 +318,43 @@ public function ranking(Request $request): Response
                 'team' => $member->team,
                 'generation' => $member->generation,
                 'photo_url' => $member->photo_url,
-                'total_votes' => (int) $member->total_votes,
+                'total_votes' => (int) ($member->total_votes ?? 0),
                 'rank' => $index + 1,
             ]);
     }
 
     return Inertia::render('voter/ranking', [
-        'announcedPeriods' => $announcedPeriods,
+        'announcedPeriods' => $completedPeriods,
         'selectedPeriod' => $selectedPeriod,
         'ranking' => $ranking,
     ]);
 }
 
-
     // ========================================
     // RIWAYAT VOTE VOTER
     // ========================================
 
-    
-
 public function history(): Response
 {
-    $votes = Vote::with(['member', 'votingPeriod'])
-        ->where('user_id', Auth::id())
-        ->orderByDesc('created_at')
-        ->get();
-
-    $history = $votes
-        ->groupBy('voting_period_id')
-        ->map(function ($periodVotes) {
-            $period = $periodVotes->first()->votingPeriod;
-
-            $members = $periodVotes
-                ->groupBy('member_id')
-                ->map(function ($memberVotes) {
-                    $firstVote = $memberVotes->first();
-
-                    return [
-                        'member_id' => $firstVote->member_id,
-                        'member_name' => $firstVote->member?->name,
-                        'member_photo' => $firstVote->member?->photo_url,
-                        'member_team' => $firstVote->member?->team,
-                        'quantity' => (int) $memberVotes->sum('quantity'),
-                    ];
-                })
-                ->values();
-
-            return [
-                'period_id' => $period?->id,
-                'period_name' => $period?->name ?? 'Periode tidak diketahui',
-                'start_at' => $period?->start_at,
-                'end_at' => $period?->end_at,
-                'total_votes' => (int) $members->sum('quantity'),
-                'members' => $members,
-            ];
-        })
-        ->values();
+    $periods = VotingPeriod::query()
+        ->where('status', '!=', 'draft')
+        ->where('end_at', '<=', now())
+        ->withSum('votes as total_votes', 'quantity')
+        ->orderByDesc('end_at')
+        ->get()
+        ->map(fn ($period) => [
+            'id' => $period->id,
+            'name' => $period->name,
+            'start_at' => $period->start_at,
+            'end_at' => $period->end_at,
+            'total_votes' => (int) ($period->total_votes ?? 0),
+        ]);
 
     return Inertia::render('voter/history', [
-        'history' => $history,
+        'periods' => $periods,
     ]);
 }
+
     // ========================================
     // PROFIL VOTER
     // ========================================

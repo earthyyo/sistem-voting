@@ -24,7 +24,7 @@ export default function Sidebar({
               { label: 'Dashboard', href: '/dashboard', icon: '▦' },
               { label: 'Daftar Member', href: '/members', icon: '♙' },
               { label: 'Ranking', href: '/ranking', icon: '♛' },
-              { label: 'Riwayat Vote', href: '/history', icon: '◷' },
+              { label: 'Riwayat Periode', href: '/history', icon: '◷' },
               { label: 'Profil Saya', href: '/profile', icon: '♧' },
           ];
 

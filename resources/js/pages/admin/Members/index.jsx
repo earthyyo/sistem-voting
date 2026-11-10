@@ -58,7 +58,7 @@ export default function Index({ members, filters = {} }) {
                 <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                     <div>
                         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-red-500">
-                            SSK.VOTE / ADMIN
+                            SSK.VOTE ADMIN
                         </p>
 
                         <h1 className="mt-2 text-3xl font-bold">
@@ -74,7 +74,7 @@ export default function Index({ members, filters = {} }) {
                         href="/admin/members/create"
                         className="rounded-xl bg-red-600 px-5 py-3 text-center font-semibold transition hover:bg-red-500"
                     >
-                        + Tambah Member
+                         Tambah Member
                     </Link>
                 </header>
 

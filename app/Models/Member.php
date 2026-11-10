@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Member extends Model
 {
@@ -30,6 +31,17 @@ class Member extends Model
         ];
     }
 
+    /**
+     * Relasi ke seluruh vote yang diterima member.
+     */
+    public function votes(): HasMany
+    {
+        return $this->hasMany(Vote::class);
+    }
+
+    /**
+     * URL foto member.
+     */
     public function getPhotoUrlAttribute(): ?string
     {
         if (!$this->photo_path) {

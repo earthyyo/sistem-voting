@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '../../../layouts/AdminLayout';
@@ -29,7 +30,7 @@ export default function Show({ voter }) {
                     </Link>
 
                     <p className="mt-5 text-sm font-semibold uppercase tracking-[0.2em] text-red-500">
-                        SSK.VOTE / ADMIN
+                        SSK.VOTE ADMIN
                     </p>
 
                     <h1 className="mt-2 text-3xl font-bold">
@@ -37,7 +38,7 @@ export default function Show({ voter }) {
                     </h1>
 
                     <p className="mt-2 text-sm text-gray-400">
-                        Informasi akun dan aktivitas voting voter.
+                        Informasi akun dan jumlah suara yang telah digunakan.
                     </p>
                 </header>
 
@@ -73,32 +74,18 @@ export default function Show({ voter }) {
                 </section>
 
                 {/* Statistik */}
-                <section className="grid gap-4 sm:grid-cols-2">
+                <section>
                     <div className="rounded-2xl border border-white/10 bg-[#151014] p-5">
                         <p className="text-sm text-gray-400">
                             Total Suara Digunakan
                         </p>
 
                         <p className="mt-2 text-3xl font-bold text-red-400">
-                            {voter.total_votes.toLocaleString('id-ID')}
+                            {Number(voter.total_votes ?? 0).toLocaleString('id-ID')}
                         </p>
 
                         <p className="mt-1 text-xs text-gray-500">
-                            Akumulasi seluruh quantity voting
-                        </p>
-                    </div>
-
-                    <div className="rounded-2xl border border-white/10 bg-[#151014] p-5">
-                        <p className="text-sm text-gray-400">
-                            Total Transaksi
-                        </p>
-
-                        <p className="mt-2 text-3xl font-bold text-white">
-                            {voter.total_transactions.toLocaleString('id-ID')}
-                        </p>
-
-                        <p className="mt-1 text-xs text-gray-500">
-                            Jumlah transaksi voting
+                            Akumulasi seluruh suara dari semua periode voting.
                         </p>
                     </div>
                 </section>

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
+namespace App\Http\Controllers\Admin;
+
 use App\Http\Controllers\Controller;
 use App\Models\Member;
 use App\Models\User;
@@ -24,14 +26,20 @@ class DashboardController extends Controller
                 ->count(),
 
             'published' => VotingPeriod::where('status', 'published')
+                ->where('end_at', '>', $now)
                 ->count(),
 
-            'closed' => VotingPeriod::where('status', 'closed')
-                ->count(),
+            'completed' => VotingPeriod::where(function ($query) use ($now) {
+                $query->where('status', 'closed')
+                    ->orWhere(function ($q) use ($now) {
+                        $q->where('status', 'published')
+                            ->where('end_at', '<=', $now);
+                    });
+            })->count(),
 
             'ongoing' => VotingPeriod::where('status', 'published')
                 ->where('start_at', '<=', $now)
-                ->where('end_at', '>=', $now)
+                ->where('end_at', '>', $now)
                 ->count(),
         ];
 
@@ -46,31 +54,40 @@ class DashboardController extends Controller
                 'end_at',
                 'status',
             ])
-            ->map(fn (VotingPeriod $period) => [
-                'id' => $period->id,
-                'name' => $period->name,
-                'start_at' => $period->start_at?->format('d M Y H:i'),
-                'end_at' => $period->end_at?->format('d M Y H:i'),
-                'status' => $period->status,
-            ]);
+            ->map(function (VotingPeriod $period) use ($now) {
+                // Tentukan status yang ditampilkan
+                if ($period->status === 'draft') {
+                    $status = 'draft';
+                } elseif (
+                    $period->status === 'closed' ||
+                    $period->end_at->lessThanOrEqualTo($now)
+                ) {
+                    $status = 'selesai';
+                } else {
+                    $status = 'published';
+                }
+
+                return [
+                    'id' => $period->id,
+                    'name' => $period->name,
+                    'start_at' => $period->start_at?->format('d M Y H:i'),
+                    'end_at' => $period->end_at?->format('d M Y H:i'),
+                    'status' => $status,
+                ];
+            });
 
         // Statistik utama dashboard admin
         $stats = [
-            // Total seluruh member
             'members' => Member::count(),
 
-            // Total member aktif
             'active_members' => Member::where('is_active', true)
                 ->count(),
 
-            // Total akun voter
             'voters' => User::where('role', 'voter')
                 ->count(),
 
-            // Total suara sebenarnya berdasarkan quantity
             'votes' => Vote::sum('quantity'),
 
-            // Statistik periode
             'periods' => $periodStats,
         ];
 

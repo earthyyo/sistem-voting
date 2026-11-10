@@ -22,6 +22,7 @@ class VotingPeriod extends Model
         return [
             'start_at' => 'datetime',
             'end_at' => 'datetime',
+            'results_announced_at' => 'datetime',
             'votes_per_voter' => 'integer',
         ];
     }
@@ -39,7 +40,7 @@ class VotingPeriod extends Model
     }
 
     public function votes(): HasMany
-{
-    return $this->hasMany(Vote::class);
-}
+    {
+        return $this->hasMany(Vote::class);
+    }
 }
