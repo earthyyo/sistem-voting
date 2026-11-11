@@ -113,20 +113,7 @@ export default function Home({
                         </div>
                     </a>
 
-                    <div className="hidden items-center gap-8 text-sm font-medium text-zinc-400 md:flex">
-                        <a href="#tentang" className="transition hover:text-white">
-                            Tentang
-                        </a>
-                        <a href="#member" className="transition hover:text-white">
-                            Member
-                        </a>
-                        <a href="#ranking" className="transition hover:text-white">
-                            Ranking
-                        </a>
-                        <a href="#berita" className="transition hover:text-white">
-                            Berita
-                        </a>
-                    </div>
+                    
 
                     <div className="flex items-center gap-3">
                         <a
@@ -290,9 +277,7 @@ export default function Home({
                                     Team {team}
                                 </span>
 
-                                <span className="absolute right-4 top-4 text-xl text-yellow-400">
-                                    {index === 0 ? '♛' : '✦'}
-                                </span>
+                              
                             </div>
 
                             <div className="p-5">

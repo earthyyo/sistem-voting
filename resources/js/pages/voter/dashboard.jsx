@@ -433,16 +433,30 @@ export default function Dashboard({
                                         {index + 1}
                                     </div>
 
-                                    <div className="min-w-0 flex-1">
-                                        <p className="truncate text-sm font-bold">
-                                            {member.name}
-                                        </p>
+                                    <div className="flex min-w-0 flex-1 items-center gap-3">
+    {member.photo_url ? (
+        <img
+            src={member.photo_url}
+            alt={member.name}
+            className="h-11 w-11 shrink-0 rounded-xl object-cover object-top"
+            loading="lazy"
+        />
+    ) : (
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-red-500 to-[#4a1022] text-sm font-black text-white">
+            {member.name?.charAt(0) || '?'}
+        </div>
+    )}
 
-                                        <p className="mt-1 text-xs text-zinc-500">
-                                            {member.team || 'Member'}
-                                        </p>
-                                    </div>
+    <div className="min-w-0">
+        <p className="truncate text-sm font-bold">
+            {member.name}
+        </p>
 
+        <p className="mt-1 text-xs text-zinc-500">
+            {member.team || 'Member'}
+        </p>
+    </div>
+</div>
                                     <div className="text-right">
                                         <p className="text-sm font-black text-red-300">
                                             {formatNumber(member.total_votes)}
